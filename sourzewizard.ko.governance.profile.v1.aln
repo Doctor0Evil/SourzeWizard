@@ -1,0 +1,57 @@
+aln file sourzewizard.ko.governance.profile.v1.aln
+namespace SourzeWizard.KO v1
+
+record TrustProfile
+  no_rollbacks          bool
+  no_downgrades         bool
+  no_hidden_control     bool
+  no_malicious_signatures bool
+  blacklist_respected   bool
+  supported_languages   list string
+
+record KOBinding
+  offline_tokenizable   bool
+  aln_sourze_ready      bool
+  anchoring_target      string
+  ecosystem             string
+
+record GovernanceKO
+  ko_id         string
+  ko_scope      string
+  ko_purpose    string
+  ko_trust      TrustProfile
+  ko_binding    KOBinding
+
+invariant ko_id_is_stable
+  forall k in GovernanceKO. k.ko_id = "sourzewizard.ko.governance.profile.v1"
+
+invariant scope_is_sourzewizard
+  forall k in GovernanceKO. k.ko_scope = "sourzewizard.aln.syntax-dev"
+
+invariant no_rollback_and_blacklist
+  forall k in GovernanceKO.
+    k.ko_trust.no_rollbacks = true
+    and k.ko_trust.no_downgrades = true
+    and k.ko_trust.blacklist_respected = true
+
+GovernanceKO(
+  ko_id      = "sourzewizard.ko.governance.profile.v1",
+  ko_scope   = "sourzewizard.aln.syntax-dev",
+  ko_purpose = "Define immutable rules and response constraints for syntax development, programmed-learning, and quantum-circuit ecological-solution construction in the SourzeWizard space.",
+  ko_trust   = TrustProfile(
+    no_rollbacks          = true,
+    no_downgrades         = true,
+    no_hidden_control     = true,
+    no_malicious_signatures = true,
+    blacklist_respected   = true,
+    supported_languages   = [
+      "Rust","ALN","Lua","Kotlin/Android","Javascript","Mojo"
+    ]
+  ),
+  ko_binding = KOBinding(
+    offline_tokenizable = true,
+    aln_sourze_ready    = true,
+    anchoring_target    = "ALN-blockchain",
+    ecosystem           = "SourzeWizard"
+  )
+)
