@@ -1,0 +1,41 @@
+aln file lawful.governance.record.v1.aln
+namespace LawfulWorkflow v1
+
+record Workflow_Step
+  step_id       string
+  profile_id    string
+  step          enum DESCRIBE, NORMALIZE, GRAPH,
+                    STRESS_TEST, ARCHITECT, QUESTION,
+                    EXPERIMENT, RECORD
+  citizen       Citizen_Context
+  ai            AI_Context
+  assumptions   list string
+  constraints   list string
+  ndm_score     f64
+  ecoscore_floor f64
+  created_at    datetime
+
+record Governance_Record
+  record_id             string
+  profile_id            string
+  session_id            string
+  steps                 list Workflow_Step
+  applied_invariants    list string
+  violated_invariants   list string
+  open_research_questions list string
+  suggested_experiments list string
+  anchor_rowsnapshot_id string
+  anchor_organichain_id string
+
+invariant lawful_step_order_and_completeness
+  forall g in Governance_Record.
+    ordered_steps(g.steps) and
+    has_all_required_sections(g.steps)
+
+invariant ndm_monotone_and_bounded
+  forall s in Workflow_Step.
+    0.0 <= s.ndm_score <= s.ai.ndm_ceiling
+
+invariant ecoscore_floor_non_degradation
+  forall s in Workflow_Step.
+    s.ecoscore_floor >= 0.86
