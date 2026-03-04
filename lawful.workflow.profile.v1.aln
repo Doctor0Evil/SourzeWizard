@@ -1,0 +1,47 @@
+aln file lawful.workflow.profile.v1.aln
+namespace LawfulWorkflow v1
+
+record DID
+  method      string         -- e.g. "bostrom"
+  id          string         -- e.g. "bostrom18..."
+  context_tag string
+
+record Citizen_Context
+  did               DID
+  sovereignty_flag  enum NEURO_SOVEREIGN, PUBLIC_ECOLOGICAL, RESTRICTED_PRIVATE
+  jurisdiction      string
+  neuro_profile_id  string
+
+record AI_Context
+  model_id      string
+  model_version string
+  host_did      DID
+  capabilities  list string
+  ndm_ceiling   f64      -- 0.0–1.0, maximum allowed NSA-discovery-meter score
+
+record Governance_Invariants
+  assumption_transparency   bool
+  workflow_graph_required   bool
+  stress_test_required      bool
+  plural_architecture       bool
+  research_feedback_required bool
+
+record Lawful_Workflow_Profile
+  profile_id       string
+  ko_scope         string           -- "sourzewizard.aln.syntax-dev"
+  normative_objective string        -- textual statement of law
+  allowed_steps    list string      -- e.g. ["DESCRIBE","NORMALIZE",...,"RECORD"]
+  no_rollbacks     bool
+  no_downgrades    bool
+  invariants       Governance_Invariants
+  author_did       DID
+  rowsnapshot_id   string
+  organichain_id   string
+
+invariant profile_scope_is_sourzewizard
+  forall p in Lawful_Workflow_Profile.
+    p.ko_scope = "sourzewizard.aln.syntax-dev"
+
+invariant no_rollbacks_and_downgrades_fixed
+  forall p in Lawful_Workflow_Profile.
+    p.no_rollbacks = true and p.no_downgrades = true
