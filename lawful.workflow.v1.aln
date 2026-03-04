@@ -1,0 +1,93 @@
+aln file lawful.workflow.v1.aln
+namespace LawfulWorkflow v1
+
+record DID
+  method       string
+  id           string
+  context_tag  string
+
+record Citizen_Context
+  did              DID
+  sovereignty_flag enum NEURO_SOVEREIGN, PUBLIC_ECOLOGICAL, RESTRICTED_PRIVATE
+  jurisdiction     string
+  neuro_profile_id string
+
+record AI_Context
+  model_id          string
+  version           string
+  host_did          DID
+  capabilities      list string
+  ndm_ceiling       f64         -- 0.0–1.0 NSA-discovery-meter ceiling
+
+record Consent_Token
+  token_id      string
+  subject_did   DID
+  scope         string          -- e.g. "work_optimization", "health_behavior"
+  revocable     bool
+  issued_at     datetime
+  expires_at    datetime
+
+record Sovereignty_Profile
+  subject_did          DID
+  allow_neural_ops     bool
+  allow_robotic_ops    bool
+  allow_ecological_ops bool
+  max_risk             f64      -- 0.0–1.0
+  ecoscore_floor       f64      -- e.g. 0.86
+
+record Workflow_State
+  state_id        string
+  citizen         Citizen_Context
+  ai              AI_Context
+  step            enum DESCRIBE, NORMALIZE, GRAPH,
+                       STRESS_TEST, ARCHITECT, QUESTION,
+                       EXPERIMENT, RECORD
+  assumptions     list string
+  constraints     list string
+  sovereignty     Sovereignty_Profile
+  consent         Consent_Token
+  ndm_score       f64
+  created_at      datetime
+
+record Transition_Proof
+  from_state_id   string
+  to_state_id     string
+  performer_did   DID
+  consent_token   Consent_Token
+  justification   string
+
+record Governance_Record
+  session_id              string
+  states                  list Workflow_State
+  transitions             list Transition_Proof
+  applied_invariants      list string
+  violated_invariants     list string
+  open_research_questions list string
+  suggested_experiments   list string
+  anchor_rowsnapshot_id   string
+  anchor_organichain_id   string
+
+invariant no_rollback_or_downgrade
+  forall g in Governance_Record.
+    monotone_time(g.states) and
+    monotone_sovereignty(g.states)
+
+invariant lawful_step_sequence
+  forall g in Governance_Record.
+    g.states[0].step = DESCRIBE and
+    follows_meta_order(g.states)
+
+invariant consent_and_sovereignty_on_transition
+  forall t in Transition_Proof.
+    t.consent_token.revocable = true and
+    t.consent_token.expires_at > t.consent_token.issued_at
+
+invariant ndm_monotone_and_bounded
+  forall s in Workflow_State.
+    0.0 <= s.ndm_score <= 1.0 and
+    monotone_ndm(s) and
+    s.ndm_score <= s.ai.ndm_ceiling
+
+invariant ecoscore_floor_respected
+  forall s in Workflow_State.
+    s.sovereignty.ecoscore_floor >= 0.86
