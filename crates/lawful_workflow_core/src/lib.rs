@@ -207,3 +207,97 @@ impl LawfulWorkflowEngine {
         }
     }
 }
+
+#[derive(Clone)]
+pub struct LawfulChatOrchestrator {
+    required_sections: Vec<Step>,
+}
+
+impl LawfulChatOrchestrator {
+    pub fn new() -> Self {
+        Self {
+            required_sections: vec![
+                Step::Describe,
+                Step::Normalize,
+                Step::Graph,
+                Step::StressTest,
+                Step::Architect,
+                Step::Question,
+                Step::Experiment,
+                Step::Record,
+            ],
+        }
+    }
+
+    pub fn append_step(
+        &self,
+        mut record: GovernanceRecord,
+        next: WorkflowStep,
+    ) -> LawDecision {
+        let mut violations = Vec::new();
+
+        if !self.check_step_sequence(&record.steps, next.step) {
+            violations.push(LawViolation::StepOrder(format!(
+                "illegal transition to {:?}",
+                next.step
+            )));
+        }
+
+        if !self.check_required_fields(&next) {
+            violations.push(LawViolation::MissingSection(
+                "assumptions or constraints missing".into(),
+            ));
+        }
+
+        if next.ndm_score > next.ai.ndm_ceiling {
+            violations.push(LawViolation::NdmExceeded {
+                current: next.ndm_score,
+                ceiling: next.ai.ndm_ceiling,
+            });
+        }
+
+        if next.ecoscore_floor < 0.86 {
+            violations.push(LawViolation::EcoFloor(
+                "ecoscore_floor below 0.86".into(),
+            ));
+        }
+
+        if !violations.is_empty() {
+            record.violated_invariants
+                .extend(violations.iter().map(|v| format!("{:?}", v)));
+            return LawDecision::Rejected { violations };
+        }
+
+        record.steps.push(next);
+        record.applied_invariants.push("AssumptionTransparency".into());
+        record.applied_invariants.push("WorkflowGraph".into());
+        record.applied_invariants.push("StressTest".into());
+        record.applied_invariants.push("PluralArchitecture".into());
+        record.applied_invariants.push("ResearchFeedback".into());
+
+        LawDecision::Accepted(record)
+    }
+
+    fn check_step_sequence(&self, existing: &[WorkflowStep], next: Step) -> bool {
+        use Step::*;
+        if existing.is_empty() {
+            return next == Describe;
+        }
+        let last = existing.last().unwrap().step;
+        matches!(
+            (last, next),
+            (Describe, Normalize)
+                | (Normalize, Graph)
+                | (Graph, StressTest)
+                | (StressTest, Architect)
+                | (Architect, Question)
+                | (Question, Experiment)
+                | (Experiment, Record)
+                | (Record, Record)
+        )
+    }
+
+    fn check_required_fields(&self, step: &WorkflowStep) -> bool {
+        !step.assumptions.is_empty() && !step.constraints.is_empty()
+    }
+}
